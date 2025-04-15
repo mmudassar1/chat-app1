@@ -15,7 +15,7 @@ export const SocketContextProvider = ({ children }) => {
 
 	useEffect(() => {
 		if (authUser) {
-			const socket = io("http://localhost:8080", {
+			const socket = io(import.meta.env.VITE_BACKEND_URL || "http://localhost:8080", {
 				withCredentials: true,
 				transports: ["polling", "websocket"],
 				auth: {
