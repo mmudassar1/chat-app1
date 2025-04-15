@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import io from 'socket.io-client';
+import { createContext, useState, useEffect, useContext } from "react";
 import { useAuthContext } from "./AuthContext";
+import io from "socket.io-client";
 
 const SocketContext = createContext();
 
@@ -15,39 +15,26 @@ export const SocketContextProvider = ({ children }) => {
 
 	useEffect(() => {
 		if (authUser) {
-			const newSocket = io("http://localhost:8080", {
+			const socket = io("http://localhost:8080", {
 				withCredentials: true,
-				transports: ["websocket"],
+				transports: ["polling", "websocket"],
 				auth: {
 					userId: authUser._id,
 				},
 			});
 
-			newSocket.on("connect", () => {
-				console.log("Socket connected");
-				setSocket(newSocket);
-			});
+			setSocket(socket);
 
-			newSocket.on("connect_error", (error) => {
-				console.error("Socket connection error:", error);
-				setSocket(null);
-			});
-
-			newSocket.on("getOnlineUsers", (users) => {
+			// socket.on() is used to listen to the events. can be used both on client and server side
+			socket.on("getOnlineUsers", (users) => {
 				setOnlineUsers(users);
 			});
 
-			return () => {
-				newSocket.off("connect");
-				newSocket.off("connect_error");
-				newSocket.off("getOnlineUsers");
-				newSocket.close();
-			};
+			return () => socket.close();
 		} else {
 			if (socket) {
 				socket.close();
 				setSocket(null);
-				setOnlineUsers([]);
 			}
 		}
 	}, [authUser]);

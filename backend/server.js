@@ -8,6 +8,7 @@ const server = http.createServer(app);
 
 // Configure Socket.IO
 const io = require('socket.io')(server, {
+    pingTimeout: 60000,
     cors: {
         origin: "http://localhost:3000",
         methods: ["GET", "POST"],
@@ -15,10 +16,20 @@ const io = require('socket.io')(server, {
     }
 });
 
+io.on("connection", (socket) => {
+    console.log("User connected:", socket.id);
+    
+    socket.on("disconnect", () => {
+        console.log("User disconnected:", socket.id);
+    });
+});
+
 // Middleware
 app.use(cors({
     origin: "http://localhost:3000",
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"]
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
