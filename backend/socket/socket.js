@@ -1,4 +1,3 @@
-
 import { Server } from "socket.io";
 import http from "http";
 import express from "express";
@@ -6,15 +5,32 @@ import express from "express";
 const app = express();
 const server = http.createServer(app);
 
-const io = new Server(server, {
-    cors: {
-        origin: ["http://localhost:5173", "http://localhost:8080"],
-        methods: ["GET", "POST"],
-        credentials: true,
-        allowedHeaders: ["Content-Type"]
-    },
-    pingTimeout: 60000
-});
+const configureSocketServer = (server) => {
+    const io = new Server(server, {
+        cors: {
+            origin: "http://localhost:5173", // Your frontend URL
+            methods: ["GET", "POST"],
+            credentials: true
+        },
+        pingTimeout: 60000
+    });
+
+    io.on('connection', (socket) => {
+        console.log('A user connected', socket.id);
+
+        socket.on('disconnect', () => {
+            console.log('User disconnected', socket.id);
+        });
+
+        socket.on('error', (error) => {
+            console.log('Socket error:', error);
+        });
+    });
+
+    return io;
+};
+
+const io = configureSocketServer(server);
 
 const userSocketMap = {}; // {userId: socketId}
 
