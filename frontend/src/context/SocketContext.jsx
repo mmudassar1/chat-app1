@@ -15,26 +15,39 @@ export const SocketContextProvider = ({ children }) => {
 
 	useEffect(() => {
 		if (authUser) {
-			const newSocket = io("https://chat-app-yt.onrender.com", {
+			const newSocket = io("http://localhost:8080", {
 				withCredentials: true,
-				transports: ["websocket", "polling"],
+				transports: ["websocket"],
 				auth: {
 					userId: authUser._id,
 				},
 			});
 
-			setSocket(newSocket);
+			newSocket.on("connect", () => {
+				console.log("Socket connected");
+				setSocket(newSocket);
+			});
 
-			// socket.on() is used to listen to the events. can be used both on client and server side
+			newSocket.on("connect_error", (error) => {
+				console.error("Socket connection error:", error);
+				setSocket(null);
+			});
+
 			newSocket.on("getOnlineUsers", (users) => {
 				setOnlineUsers(users);
 			});
 
-			return () => newSocket.close();
+			return () => {
+				newSocket.off("connect");
+				newSocket.off("connect_error");
+				newSocket.off("getOnlineUsers");
+				newSocket.close();
+			};
 		} else {
 			if (socket) {
 				socket.close();
 				setSocket(null);
+				setOnlineUsers([]);
 			}
 		}
 	}, [authUser]);
