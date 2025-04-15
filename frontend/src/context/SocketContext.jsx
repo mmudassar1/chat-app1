@@ -1,48 +1,43 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import io from 'socket.io-client';
+import { useAuthContext } from "./AuthContext";
 
 const SocketContext = createContext();
 
-export const SocketProvider = ({ children }) => {
-    const [socket, setSocket] = useState(null);
-    const [isConnected, setIsConnected] = useState(false);
-
-    useEffect(() => {
-        const newSocket = io('http://localhost:5000', {
-            reconnection: true,
-            reconnectionAttempts: 5,
-            reconnectionDelay: 1000,
-        });
-
-        newSocket.on('connect', () => {
-            console.log('Connected to server');
-            setIsConnected(true);
-        });
-
-        newSocket.on('connect_error', (error) => {
-            console.error('Connection error:', error);
-            setIsConnected(false);
-        });
-
-        setSocket(newSocket);
-
-        return () => {
-            newSocket.close();
-            setIsConnected(false);
-        };
-    }, []);
-
-    return (
-        <SocketContext.Provider value={{ socket, isConnected }}>
-            {children}
-        </SocketContext.Provider>
-    );
+export const useSocketContext = () => {
+	return useContext(SocketContext);
 };
 
-export const useSocket = () => {
-    const context = useContext(SocketContext);
-    if (!context) {
-        throw new Error('useSocket must be used within a SocketProvider');
-    }
-    return context;
+export const SocketContextProvider = ({ children }) => {
+	const [socket, setSocket] = useState(null);
+	const [onlineUsers, setOnlineUsers] = useState([]);
+	const { authUser } = useAuthContext();
+
+	useEffect(() => {
+		if (authUser) {
+			const newSocket = io("https://chat-app-yt.onrender.com", {
+				withCredentials: true,
+				transports: ["websocket", "polling"],
+				auth: {
+					userId: authUser._id,
+				},
+			});
+
+			setSocket(newSocket);
+
+			// socket.on() is used to listen to the events. can be used both on client and server side
+			newSocket.on("getOnlineUsers", (users) => {
+				setOnlineUsers(users);
+			});
+
+			return () => newSocket.close();
+		} else {
+			if (socket) {
+				socket.close();
+				setSocket(null);
+			}
+		}
+	}, [authUser]);
+
+	return <SocketContext.Provider value={{ socket, onlineUsers }}>{children}</SocketContext.Provider>;
 };

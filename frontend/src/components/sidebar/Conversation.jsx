@@ -1,15 +1,13 @@
+import { useSocketContext } from "../../context/SocketContext";
 import React from "react";
-import { useSocket } from "../../context/SocketContext";
 import useConversation from "../../zustand/useConversation";
 
 const Conversation = ({ conversation, lastIdx, emoji }) => {
 	const { selectedConversation, setSelectedConversation } = useConversation();
 
 	const isSelected = selectedConversation?._id === conversation._id;
-	// Removed onlineUsers usage as it is not provided by socket context
-	// const { onlineUsers } = useSocket();
-	// const isOnline = onlineUsers.includes(conversation._id);
-	const isOnline = false; // Default to false or implement onlineUsers logic separately
+	const { onlineUsers } = useSocketContext();
+	const isOnline = onlineUsers.includes(conversation._id);
 
 	return (
 		<>
